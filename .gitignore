@@ -1,0 +1,20 @@
+# Ambientes Python locais
+.venv/
+venv/
+
+# Cache e arquivos gerados pelo Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Arquivos intermediários e executável gerados pelo PyInstaller
+build/
+dist/
+
+# Configurações locais do PyCharm
+.idea/
+
+# Vídeos baixados durante os testes
+test_download/

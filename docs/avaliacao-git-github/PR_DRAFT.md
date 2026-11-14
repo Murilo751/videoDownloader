@@ -2,7 +2,7 @@
 - Adaptação inicial do antigo baixador para um catálogo de vídeos CRUD com Web, CLI, API REST e PostgreSQL. **Rascunho técnico:** a avaliação pede uma PR principal por issue; esta mudança conjunta não satisfaz esse critério histórico.
 
 ## Issue relacionada
-- Referências às 16 issues: preencher depois de criá-las no GitHub. Esta PR de preparação não deve usar `Closes` para todas as issues.
+- Refs #1, #2, #3, #4, #5, #6, #7, #8, #9, #10, #11, #12, #13, #14, #15, #16. Esta PR de preparação não usa `Closes`, pois cada issue requer sua própria PR principal.
 
 ## Motivo da correção (PR adicional)
 - Não se aplica.

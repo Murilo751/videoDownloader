@@ -1,6 +1,6 @@
 # Plano das 16 issues — equipe de 4
 
-Use `Integrante A/B/C/D` como placeholders: troque pelos quatro usuários reais antes de criar as issues no GitHub. Cada pessoa deve **criar, assumir e entregar** suas quatro issues. O milestone de cada issue é o ciclo indicado. Cada issue principal precisa de uma PR própria, com `Closes #N`, aprovação dos outros três colegas, testes, cobertura de 100%, tag e release após o merge. Esta lista não substitui essas ações no GitHub.
+As issues #1–#16, as labels e os milestones `Ciclo 1` a `Ciclo 4` já foram criados no GitHub. `Integrante A/B/C/D` ainda são placeholders: substitua pelos quatro usuários reais e atribua cada issue. As 16 issues foram criadas pela conta Murilo751 a pedido do usuário; isso **não cumpre** o critério de que cada estudante crie suas próprias quatro issues. Cada pessoa ainda precisa assumir e entregar quatro issues. Cada issue principal precisa de uma PR própria, com `Closes #N`, aprovação dos outros três colegas, testes, cobertura de 100%, tag e release após o merge. Esta lista não substitui essas ações no GitHub.
 
 ## Ciclo 1
 

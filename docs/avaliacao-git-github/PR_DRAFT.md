@@ -52,6 +52,7 @@
 - `docker compose config --quiet` passou com `APP_PASSWORD` de teste.
 - `node --check` do JavaScript embutido passou.
 - Smoke test Flask com banco simulado passou para health, login/401 e leitura autenticada Web/CLI.
+- [CI do PR #17](https://github.com/Murilo751/videoDownloader/actions/runs/43592710985): 16 testes, 100% de cobertura e smoke test com Web, CLI e PostgreSQL passaram; os logs da API e do banco foram verificados com o mesmo `request_id`.
 
 ## Summary
 ```text
@@ -62,7 +63,7 @@ cli.py ─────┘
 
 ## Evidence
 - **Before:** aplicativo Windows de download, sem Web, API, banco, CLI REST ou Compose.
-- **After:** rotas e clientes implementados; checagens locais e 16 testes em Compose passaram, com 100% de cobertura. O smoke test integrado com PostgreSQL está configurado no CI e aguarda execução.
+- **After:** rotas e clientes implementados; checagens locais, 16 testes em Compose com 100% de cobertura e smoke test integrado com PostgreSQL passaram.
 
 ## Merge Danger
 **Door:** two-way

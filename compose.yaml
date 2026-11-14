@@ -1,0 +1,56 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: videos
+      POSTGRES_USER: videos
+      POSTGRES_PASSWORD: local_database_only
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U videos -d videos"]
+      interval: 2s
+      retries: 20
+  api:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://videos:local_database_only@db:5432/videos
+      APP_USERNAME: ${APP_USERNAME:-admin}
+      APP_PASSWORD: ${APP_PASSWORD:?Defina APP_PASSWORD no ambiente antes de iniciar}
+    depends_on:
+      db:
+        condition: service_healthy
+  web:
+    image: nginx:1.27-alpine
+    ports:
+      - "8080:80"
+    volumes:
+      - ./index.html:/usr/share/nginx/html/index.html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - api
+  cli:
+    build: .
+    profiles: ["tools"]
+    entrypoint: ["python", "cli.py"]
+    environment:
+      API_URL: http://api:5000
+      VIDEO_TOKEN: ${VIDEO_TOKEN:-}
+    volumes:
+      - ./exports:/exports
+    depends_on:
+      - api
+  tests:
+    build: .
+    profiles: ["tools"]
+    entrypoint: ["python", "-m", "pytest"]
+    command: ["-q", "--cov=api", "--cov=db", "--cov=cli", "--cov-report=term-missing", "--cov-fail-under=100"]
+    environment:
+      DATABASE_URL: postgresql://videos:local_database_only@db:5432/videos
+      APP_USERNAME: test
+      APP_PASSWORD: test-only-password
+    depends_on:
+      db:
+        condition: service_healthy
+volumes:
+  pgdata:

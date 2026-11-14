@@ -8,10 +8,14 @@ __pycache__/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/
+.coverage
+htmlcov/
+exports/
 
 # Arquivos intermediários e executável gerados pelo PyInstaller
 build/
 dist/
+.tools/
 
 # Configurações locais do PyCharm
 .idea/

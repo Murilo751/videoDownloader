@@ -1,6 +1,8 @@
 import argparse
 import os
+import shutil
 import sys
+import time
 from pathlib import Path
 
 
@@ -11,6 +13,47 @@ __   _(_) __| | ___  ___|  _ \  _____      ___ __ | | ___   __ _  __| | ___ _ __
  \ V /| | (_| |  __/ (_) | |_| | (_) \ V  V /| | | | | (_) | (_| | (_| |  __/ |
   \_/ |_|\__,_|\___|\___/|____/ \___/ \_/\_/ |_| |_|_|\___/ \__,_|\__,_|\___|_|
 """
+
+
+def terminal_colors() -> bool:
+    """Usa ANSI apenas quando a saída aceita cores e o usuário não as desativou."""
+    if not sys.stdout.isatty() or "NO_COLOR" in os.environ:
+        return False
+    if os.name != "nt":
+        return True
+    try:
+        import ctypes
+
+        kernel32 = ctypes.windll.kernel32
+        handle = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+        mode = ctypes.c_uint()
+        if not kernel32.GetConsoleMode(handle, ctypes.byref(mode)):
+            return False
+        return bool(kernel32.SetConsoleMode(handle, mode.value | 0x0004))
+    except (AttributeError, OSError):
+        return False
+
+
+def paint(value: str, code: str, colors: bool) -> str:
+    return f"\x1b[{code}m{value}\x1b[0m" if colors else value
+
+
+def show_banner(colors: bool) -> None:
+    """Revela o ASCII art em terminais interativos, sem atrasar saídas redirecionadas."""
+    lines = BANNER.strip("\n").splitlines()
+    border = "-" * max(map(len, lines))
+    animate = sys.stdout.isatty() and shutil.get_terminal_size((120, 25)).columns >= len(border) + 2
+    print(paint("+" + border + "+", "2;36", colors))
+    for number, line in enumerate(lines):
+        shade = "1;36" if number % 2 == 0 else "1;35"
+        if animate:
+            for end in range(8, len(line) + 8, 8):
+                print("\r" + paint(line[:end], shade, colors), end="", flush=True)
+                time.sleep(0.008)
+            print()
+        else:
+            print(paint(line, shade, colors))
+    print(paint("+" + border + "+", "2;36", colors))
 
 
 FORMAT = (
@@ -57,6 +100,9 @@ def node_runtime() -> dict:
         if not bundled_node.is_file():
             raise RuntimeError("Node.js não foi incluído no executável")
         return {"node": {"path": str(bundled_node)}}
+    local_node = Path(__file__).resolve().parent / ".tools" / "node-v24.22.1" / "node.exe"
+    if local_node.is_file():
+        return {"node": {"path": str(local_node)}}
     return {"deno": {}, "node": {}}
 
 
@@ -89,31 +135,40 @@ def available_resolutions(url: str) -> list[int]:
     return heights
 
 
-def choose_resolution(heights: list[int]) -> int | None:
+def choose_resolution(heights: list[int], colors: bool = False) -> int | None:
     """Mostra um seletor entre Mín. e Máx. controlado pelas setas."""
     if len(heights) == 1:
-        print(f"Única resolução disponível: {heights[0]}p")
+        print(paint(f"Única resolução disponível: {heights[0]}p", "1;32", colors))
         return heights[0]
 
-    print("Use as setas esquerda/direita e pressione Enter. Esc cancela.")
+    print(paint("Use as setas esquerda/direita (ou A/D), Enter confirma e Esc cancela.", "2", colors))
     index = len(heights) - 1
 
-    def line() -> str:
+    def line() -> tuple[str, str]:
         marker = round(index * 24 / (len(heights) - 1))
         bar = "-" * marker + "O" + "-" * (24 - marker)
-        return (
-            f"MÍN {heights[0]}p [{bar}] MÁX {heights[-1]}p"
-            f"  Escolhida: {heights[index]}p"
+        left = f"MÍN {heights[0]}p ["
+        right = f"] MÁX {heights[-1]}p  Escolhida: "
+        chosen = f"{heights[index]}p"
+        plain = left + bar + right + chosen
+        styled = (
+            paint(left, "2", colors)
+            + paint(bar[:marker], "36", colors)
+            + paint("O", "1;35", colors)
+            + paint(bar[marker + 1 :], "2", colors)
+            + paint(right, "2", colors)
+            + paint(chosen, "1;32", colors)
         )
+        return plain, styled
 
     if os.name == "nt" and sys.stdin.isatty():
         import msvcrt
 
         previous_length = 0
         while True:
-            current = line()
-            print("\r" + current.ljust(previous_length), end="", flush=True)
-            previous_length = len(current)
+            plain, styled = line()
+            print("\r" + styled + " " * max(0, previous_length - len(plain)), end="", flush=True)
+            previous_length = len(plain)
             key = msvcrt.getwch()
             if key in ("\r", "\n"):
                 print()
@@ -132,17 +187,17 @@ def choose_resolution(heights: list[int]) -> int | None:
             elif key.lower() == "d":
                 index = min(len(heights) - 1, index + 1)
 
-    print(line())
-    print("Opções:", ", ".join(f"{i + 1}: {height}p" for i, height in enumerate(heights)))
+    print(line()[1])
+    print("Opções:", ", ".join(paint(f"{i + 1}: {height}p", "1;36", colors) for i, height in enumerate(heights)))
     try:
-        answer = input("Número da resolução (Enter = Máx.): ").strip()
+        answer = input(paint("Número da resolução (Enter = Máx.): ", "1;35", colors)).strip()
     except EOFError:
         return heights[-1]
     if not answer:
         return heights[-1]
     if answer.isdecimal() and 1 <= int(answer) <= len(heights):
         return heights[int(answer) - 1]
-    print("Escolha inválida.")
+    print(paint("Escolha inválida.", "1;31", colors))
     return None
 
 
@@ -225,16 +280,13 @@ def main() -> int:
     if args.url:
         return download_video(args.url, args.saida, args.verificar)
 
-    banner = BANNER.strip("\n")
-    border = "-" * max(len(line) for line in banner.splitlines())
-    print("." + border + ".")
-    print(banner)
-    print("'" + border + "'")
-    print("videoDownloader | vídeos em MP4")
-    print(f"Os arquivos serão salvos em: {args.saida.resolve()}")
+    colors = terminal_colors()
+    show_banner(colors)
+    print(paint("videoDownloader", "1;35", colors) + " | vídeos em MP4")
+    print(paint("Destino  ", "2", colors) + str(args.saida.resolve()))
     while True:
         try:
-            url = input("\nCole o link do vídeo (Enter para sair): ").strip()
+            url = input("\n" + paint("> Cole o link do vídeo (Enter para sair): ", "1;36", colors)).strip()
         except (EOFError, KeyboardInterrupt):
             print()
             return 0
@@ -242,10 +294,12 @@ def main() -> int:
             return 0
         try:
             heights = available_resolutions(url)
-            print("Resoluções disponíveis:", ", ".join(f"{h}p" for h in heights))
+            print(paint("Resoluções disponíveis: ", "2", colors) + ", ".join(
+                paint(f"{h}p", "1;36", colors) for h in heights
+            ))
             if args.verificar:
                 continue
-            height = choose_resolution(heights)
+            height = choose_resolution(heights, colors)
             if height is not None:
                 download_video(url, args.saida, height=height)
         except Exception as exc:

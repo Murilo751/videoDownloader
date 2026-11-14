@@ -12,3 +12,41 @@ jobs:
         env:
           APP_PASSWORD: ci-only-password
         run: docker compose run --build --rm tests
+      - name: Smoke test Web and CLI with PostgreSQL
+        env:
+          APP_PASSWORD: ci-only-password
+        run: |
+          docker compose up -d --build
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8080/api/web/health > /dev/null; then break; fi
+            sleep 1
+          done
+          test "$(curl --silent -o /dev/null -w '%{http_code}' http://localhost:8080/api/web/records)" = 401
+          curl --fail --silent -c /tmp/video-cookies -H 'Content-Type: application/json' \
+            -d '{"username":"admin","password":"ci-only-password"}' \
+            http://localhost:8080/api/web/login > /dev/null
+          curl --fail --silent -b /tmp/video-cookies -H 'Content-Type: application/json' \
+            -H 'X-Request-ID: ci-web-create' \
+            -d '{"title":"Teste CI","url":"https://example.com/video","category":"Música","creator":"Canal","duration_minutes":4,"active":true}' \
+            http://localhost:8080/api/web/records > /tmp/created.json
+          record_id=$(python3 -c 'import json; print(json.load(open("/tmp/created.json"))["id"])')
+          curl --fail --silent -b /tmp/video-cookies 'http://localhost:8080/api/web/records/search?category=M%C3%BAsica' | \
+            python3 -c 'import json,sys; assert len(json.load(sys.stdin)["items"]) == 1'
+          curl --fail --silent -b /tmp/video-cookies http://localhost:8080/api/web/dashboard | \
+            python3 -c 'import json,sys; assert json.load(sys.stdin)["categories"][0]["value"] == 1'
+          curl --fail --silent -b /tmp/video-cookies http://localhost:8080/api/web/records/export | grep 'Teste CI'
+          curl --fail --silent -b /tmp/video-cookies -X PATCH -H 'Content-Type: application/json' \
+            -d '{"active":false}' "http://localhost:8080/api/web/records/$record_id/status" > /dev/null
+          curl --fail --silent -b /tmp/video-cookies -X POST \
+            "http://localhost:8080/api/web/records/$record_id/duplicate" | \
+            python3 -c 'import json,sys; assert json.load(sys.stdin)["id"] != 1'
+          token=$(curl --fail --silent -H 'Content-Type: application/json' \
+            -d '{"username":"admin","password":"ci-only-password"}' \
+            http://localhost:8080/api/cli/token | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])')
+          VIDEO_TOKEN="$token" docker compose run --rm cli list
+          curl --fail --silent -H "Authorization: Bearer $token" -H 'X-Request-ID: ci-cli-list' \
+            http://localhost:8080/api/cli/records > /dev/null
+          docker compose logs api | grep 'ci-web-create' | grep '"layer": "api"'
+          docker compose logs api | grep 'ci-web-create' | grep '"layer": "db"'
+          docker compose logs api | grep 'ci-cli-list' | grep '"layer": "api"'
+          docker compose logs api | grep 'ci-cli-list' | grep '"layer": "db"'

@@ -38,7 +38,7 @@
 ## Testes unitários e cobertura
 - `tests/test_api.py`, `tests/test_db.py`, `tests/test_cli.py`.
 - Comando: `docker compose run --build --rm tests`.
-- **Resultado pendente:** o daemon Docker não iniciou neste ambiente; não há medição de cobertura validada. A configuração exige 100% e deve ser corrigida caso a execução revele linhas descobertas.
+- **Resultado:** [CI na branch](https://github.com/Murilo751/videoDownloader/actions/runs/43592533963) concluiu com 16 testes passando e 100% de cobertura de linhas em `api.py` (183/183), `cli.py` (94/94) e `db.py` (68/68). O daemon Docker local não iniciou; a medição foi feita no GitHub Actions com Compose.
 - A aplicação anterior não tinha suíte de testes integrada.
 
 ## Execução integral via Docker Compose
@@ -62,11 +62,11 @@ cli.py ─────┘
 
 ## Evidence
 - **Before:** aplicativo Windows de download, sem Web, API, banco, CLI REST ou Compose.
-- **After:** rotas e clientes implementados; checagens de sintaxe/estrutura e smoke test locais passaram. Testes completos em Docker pendentes.
+- **After:** rotas e clientes implementados; checagens locais e 16 testes em Compose passaram, com 100% de cobertura. O smoke test integrado com PostgreSQL está configurado no CI e aguarda execução.
 
 ## Merge Danger
 **Door:** two-way
 
 **Blast Radius:** projeto inteiro
 
-Substitui o fluxo anterior de download. A cópia está em `docs/legacy/`. Não integrar sem testes de Compose e sem separar as entregas por issue se o objetivo for cumprir integralmente o processo da avaliação.
+Substitui o fluxo anterior de download. A cópia está em `docs/legacy/`. Não integrar sem separar as entregas por issue se o objetivo for cumprir integralmente o processo da avaliação.

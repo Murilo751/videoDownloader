@@ -28,7 +28,7 @@ def test_health_login_and_authentication(client):
     assert client.get("/api/web/records").status_code == 401
     assert client.get("/api/cli/dashboard").status_code == 401
     assert client.post("/api/web/login", json={"username": "test", "password": "wrong"}).status_code == 401
-    assert client.post("/api/web/login", json=[]).status_code == 401
+    assert client.post("/api/web/login", json=["invalid"]).status_code == 401
     assert client.post("/api/web/login", json={"username": 1, "password": "senha"}).status_code == 401
     assert client.post("/api/web/login", json={"username": "test", "password": "senha"}).status_code == 200
     assert client.get("/api/web/records").status_code == 200
